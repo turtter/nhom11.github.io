@@ -1,6 +1,4 @@
-# Nhóm TAD
-Web dự đoán về bờ số 1 tlu by TAD
+# Nhóm 11
                            
 
                             
-                           Nhập file ảnh cần nhận diện
