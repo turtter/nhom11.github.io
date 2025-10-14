@@ -1,2 +1,6 @@
-# nhom11.github.io
-Web dự đoán chất lượng điện thoại qua hình ảnh
+# Nhóm TAD
+Web dự đoán về bờ số 1 tlu by TAD
+                           
+
+                            
+                           Nhập file ảnh cần nhận diện
