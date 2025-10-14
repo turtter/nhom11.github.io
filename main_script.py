@@ -40,7 +40,7 @@ def crop_with_margin(img, box, margin_ratio=0.05):
 # ======================================================
 # 3️⃣ ✨ Tách hàm dự đoán và lưu kết quả
 # ======================================================
-def process_image(model, image_path, device, score_thresh=0.6565):
+def process_image(model, image_path, device, score_thresh=0.65):
     img = cv2.imread(image_path)
     if img is None:
         print(f"❌ Không đọc được ảnh: {image_path}")
