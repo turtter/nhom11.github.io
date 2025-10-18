@@ -19,7 +19,7 @@ def get_model():
     return model, device
 
 # --- Hàm dự đoán cho Web App (Đã cập nhật logic trả về) ---
-def predict_for_webapp(model, device, image_pil, score_thresh=0.8):
+def predict_for_webapp(model, device, image_pil, score_thresh=0.6):
     """
     Hàm này nhận ảnh PIL, dự đoán và trả về:
     - detection_status: Một chuỗi ("VỠ", "KHÔNG VỠ", "KHÔNG TÌM THẤY").
