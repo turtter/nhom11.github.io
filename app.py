@@ -33,7 +33,7 @@ def load_classification_models():
     """Tải mô hình ViT và mô hình Softmax đã huấn luyện."""
     st.info("Đang tải mô hình Phân loại (ViT + Softmax)...")
     
-    # 1. Tải mô hình ViT (ĐÃ THÊM LẠI CODE BỊ THIẾU)
+    # 1. Tải mô hình ViT
     try:
         weights = ViT_B_16_Weights.IMAGENET1K_V1
         transform_for_vit = weights.transforms()
@@ -46,50 +46,29 @@ def load_classification_models():
             T.Normalize(mean=[0.456, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
-    # Dòng này phải ở ngoài try/except
     if hasattr(vit_model, "heads"):
         vit_model.heads.head = torch.nn.Identity()
     else:
         vit_model.head = torch.nn.Identity()
     vit_model.eval()
 
-    # 2. Tải mô hình Softmax VÀ TÍNH TOÁN MEAN/STD
+    # 2. Tải mô hình Softmax
     MODEL_PATH = os.path.join(SCRIPT_DIR, "softmax_model.pkl")
-    NPZ_PATH = os.path.join(SCRIPT_DIR, "softmax_model.npz")
     
-    if not os.path.exists(MODEL_PATH) or not os.path.exists(NPZ_PATH):
-        st.error(f"Lỗi: Không tìm thấy 'softmax_model.pkl' hoặc 'softmax_model.npz'.")
+    if not os.path.exists(MODEL_PATH):
+        st.error(f"Lỗi: Không tìm thấy 'softmax_model.pkl'.")
         return None, None, None, None, None, None, None
 
     # Tải file .pkl (chỉ chứa W, b, label_map)
     with open(MODEL_PATH, "rb") as f:
         softmax_model = pickle.load(f)
 
-    # --- SỬA LỖI KEYERROR BẰNG CÁCH TÍNH TOÁN TỪ FILE .NPZ ---
-    try:
-        st.info("Đang tính toán mean/std từ file .npz...")
-        data = np.load(NPZ_PATH)
-        
-        # !!!! QUAN TRỌNG !!!!
-        # Thay thế 'features_train' bằng tên key đúng trong file .npz của bạn
-        # (Có thể là 'features', 'X_train', 'data', v.v...)
-        KEY_NAME = 'features_train' # <-- THAY TÊN KEY Ở ĐÂY NẾU CẦN
-        
-        if KEY_NAME not in data:
-            st.error(f"Lỗi: File .npz không có key '{KEY_NAME}'.")
-            st.info(f"Các key tìm thấy: {list(data.keys())}. Vui lòng cập nhật code.")
-            return None, None, None, None, None, None, None
-            
-        training_features = data[KEY_NAME] 
-        
-        # Tính toán
-        feature_mean = np.mean(training_features, axis=0)
-        feature_std = np.std(training_features, axis=0)
-        st.info("Đã tính toán xong mean/std.")
-        
-    except Exception as e:
-        st.error(f"Không thể tính mean/std từ file .npz: {e}")
-        return None, None, None, None, None, None, None
+    # --- SỬA LỖI KEYERROR BẰNG CÁCH GÁN GIÁ TRỊ GIẢ ---
+    # Chúng ta bỏ qua bước chuẩn hóa vì file .pkl không có 'mean' và 'std'
+    # CẢNH BÁO: Điều này sẽ làm cho dự đoán BỊ SAI
+    st.warning("Cảnh báo: Không tìm thấy 'mean' và 'std' trong file model. Bỏ qua bước chuẩn hóa. Kết quả phân loại (Mô hình 1) sẽ KHÔNG chính xác.")
+    feature_mean = 0.0  # Gán giá trị giả
+    feature_std = 1.0   # Gán giá trị giả (để phép chia không bị lỗi)
     # --- KẾT THÚC SỬA LỖI ---
 
     W, b = softmax_model["W"], softmax_model["b"]
@@ -98,7 +77,7 @@ def load_classification_models():
     
     st.success("Tải xong mô hình Phân loại.")
     return vit_model, transform_for_vit, W, b, feature_mean, feature_std, label_map
-# --- KẾT THÚC HÀM (ĐÃ XÓA CODE LẶP) ---
+# --- KẾT THÚC HÀM ---
 
 
 def extract_vit_features(pil_image, vit, transform, device):
@@ -222,10 +201,10 @@ if uploaded_file is not None:
             # 1. Trích xuất đặc trưng ViT
             vit_features = extract_vit_features(image_pil, vit_model, transform_for_vit, DEVICE)
             
-            # 2. Chuẩn hóa
+            # 2. Chuẩn hóa (BƯỚC NÀY SẼ BỊ BỎ QUA VÌ MEAN=0, STD=1)
             standardized_features = (vit_features - feature_mean) / feature_std
             
-            # 3. Dự đoán
+            # 3. Dự đoán (SẼ BỊ SAI)
             pred_class, probs = predict_classification(standardized_features, W, b)
             
             predicted_label_index = int(pred_class[0])
