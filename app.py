@@ -85,7 +85,7 @@ with col2:
         image = Image.open(uploaded_file).convert("RGB")
         with st.spinner('Đang xử lý...'):
             # Chạy dự đoán và nhận trạng thái
-            detection_status, result_image = predict_for_webapp(model, device, image, score_thresh=0.8)
+            detection_status, result_image = predict_for_webapp(model, device, image, score_thresh=0.5)
             
             # --- LOGIC HIỂN THỊ MỚI ---
             if detection_status == "VỠ":
