@@ -33,24 +33,57 @@ def load_classification_models():
     """Tải mô hình ViT và mô hình Softmax đã huấn luyện."""
     st.info("Đang tải mô hình Phân loại (ViT + Softmax)...")
     
-    # 1. Tải mô hình ViT
+    # ... (code tải ViT giữ nguyên) ...
     try:
         weights = ViT_B_16_Weights.IMAGENET1K_V1
-        transform_for_vit = weights.transforms()
-        vit_model = vit_b_16(weights=weights).to(DEVICE)
+        # ... (giữ nguyên code tải ViT) ...
     except Exception:
-        st.warning("Không thể tải weights mới của ViT, thử phương pháp cũ.")
-        vit_model = vit_b_16(pretrained=True).to(DEVICE)
-        transform_for_vit = T.Compose([
-            T.Resize(256), T.CenterCrop(224), T.ToTensor(),
-            T.Normalize(mean=[0.456, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ])
-
-    if hasattr(vit_model, "heads"):
-        vit_model.heads.head = torch.nn.Identity()
-    else:
-        vit_model.head = torch.nn.Identity()
+        # ... (giữ nguyên code) ...
     vit_model.eval()
+
+    # 2. Tải mô hình Softmax VÀ TÍNH TOÁN MEAN/STD
+    MODEL_PATH = os.path.join(SCRIPT_DIR, "softmax_model.pkl") # Sửa đường dẫn này nếu cần
+    NPZ_PATH = os.path.join(SCRIPT_DIR, "softmax_model.npz")   # Đường dẫn đến file .npz
+    
+    if not os.path.exists(MODEL_PATH) or not os.path.exists(NPZ_PATH):
+        st.error(f"Lỗi: Không tìm thấy 'softmax_model.pkl' hoặc 'softmax_model.npz'.")
+        return None, None, None, None, None, None, None
+
+    # Tải file .pkl (chỉ chứa W, b, label_map)
+    with open(MODEL_PATH, "rb") as f:
+        softmax_model = pickle.load(f)
+
+    # --- SỬA LỖI KEYERROR BẰNG CÁCH TÍNH TOÁN TỪ FILE .NPZ ---
+    try:
+        st.info("Đang tính toán mean/std từ file .npz...")
+        data = np.load(NPZ_PATH)
+        
+        # !!!! QUAN TRỌNG !!!!
+        # Thay thế 'features_train' bằng tên key đúng trong file .npz của bạn
+        # (Có thể là 'features', 'X_train', 'data', v.v...)
+        if 'features_train' not in data:
+            st.error(f"Lỗi: File .npz không có key 'features_train'.")
+            st.info(f"Các key tìm thấy: {list(data.keys())}. Vui lòng cập nhật code.")
+            return None, None, None, None, None, None, None
+            
+        training_features = data['features_train'] 
+        
+        # Tính toán
+        feature_mean = np.mean(training_features, axis=0)
+        feature_std = np.std(training_features, axis=0)
+        st.info("Đã tính toán xong mean/std.")
+        
+    except Exception as e:
+        st.error(f"Không thể tính mean/std từ file .npz: {e}")
+        return None, None, None, None, None, None, None
+    # --- KẾT THÚC SỬA LỖI ---
+
+    W, b = softmax_model["W"], softmax_model["b"]
+    original_label_map = softmax_model["label_map"]
+    label_map = {v: k for k, v in original_label_map.items()}
+    
+    st.success("Tải xong mô hình Phân loại.")
+    return vit_model, transform_for_vit, W, b, feature_mean, feature_std, label_map
 
     # 2. Tải mô hình Softmax
     MODEL_PATH = os.path.join(SCRIPT_DIR, "softmax_model.pkl")
