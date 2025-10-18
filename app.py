@@ -53,7 +53,7 @@ def load_classification_models():
     vit_model.eval()
 
     # 2. Tải mô hình Softmax
-    MODEL_PATH = os.path.join(SCRIPT_DIR, "outputs", "softmax_model.pkl")
+    MODEL_PATH = os.path.join(SCRIPT_DIR, "softmax_model.pkl")
     if not os.path.exists(MODEL_PATH):
         st.error(f"Lỗi: Không tìm thấy 'softmax_model.pkl' tại '{MODEL_PATH}'.")
         return None, None, None, None, None, None, None
